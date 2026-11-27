@@ -13,11 +13,115 @@ section {display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));g
 article {padding:1.4rem;background:#10332a;border:1px solid #386555;border-radius:12px}
 h2 {font-size:1rem;font-weight:500;margin:0 0 .6rem}
 output {font-size:1.65rem;color:#f6d697;overflow-wrap:anywhere}
+article p {font-size:.88rem;color:#ceded7;margin:.45rem 0 0}
+h2.section-title {font-size:1.3rem;margin:2.4rem 0 .8rem}
+a {color:#f6d697;text-underline-offset:.2em}
+nav {display:flex;flex-wrap:wrap;gap:.65rem 1.4rem}
+table {border-collapse:collapse;width:100%;font-size:.93rem}
+th,td {padding:.5rem .6rem;border-bottom:1px solid #386555;text-align:left}
+th:nth-child(2),td:nth-child(2) {text-align:right;white-space:nowrap}
+.swap-flow {display:block;margin:2.4rem 0 0;padding:clamp(.85rem,3vw,1.4rem);background:#0c2922;border:1px solid #386555;border-radius:12px}
+.swap-flow h2 {font-size:1.3rem}
+.swap-flow p {margin:.65rem 0 0;color:#ceded7;font-size:.88rem}
+.swap-flow p + .swap-lane {margin-top:1rem}
+.swap-lane {display:grid;grid-template-columns:5rem minmax(0,1fr);align-items:center;gap:.65rem;margin:.65rem 0}
+.swap-lane h3 {font-size:.87rem;margin:0;color:#f6d697}
+.swap-lane ol {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin:0;padding:0;list-style:none}
+.swap-lane li {position:relative;display:grid;place-items:center;min-height:2.4rem;padding:.4rem;background:#10332a;border:1px solid #386555;border-radius:6px;text-align:center;font-size:.8rem;line-height:1.3}
+.swap-lane li:not(:last-child)::after {content:"→";position:absolute;right:-.87rem;color:#e3bf79}
+.swap-lane .fee-step {color:#f6d697;border-color:#ad8a50}
+.swap-flow .swap-result {margin-top:1rem;padding-top:.85rem;border-top:1px solid #386555}
+.swap-result strong {color:#f6d697}
+.fee-source {text-align:center;padding:.65rem;background:#10332a;border:1px solid #ad8a50;border-radius:8px;color:#f6d697}
+.fee-branches {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.65rem;margin-top:.7rem}
+.fee-branch {padding:.75rem;background:#10332a;border:1px solid #386555;border-radius:8px}
+.fee-branch h3 {margin:0 0 .4rem;font-size:.83rem;color:#f6d697}
+.fee-branch dl {margin:0;font-size:.76rem}
+.fee-branch dl div {display:flex;justify-content:space-between;gap:.35rem;padding:.22rem 0}
+.fee-branch dd {margin:0;white-space:nowrap;color:#f6d697;font-variant-numeric:tabular-nums}
+@media (max-width:34rem) {
+  .swap-lane {grid-template-columns:1fr;gap:.35rem}
+  .swap-lane ol {gap:.7rem}
+  .swap-lane li {font-size:.72rem;padding:.3rem .18rem;overflow-wrap:anywhere}
+  .swap-lane li:not(:last-child)::after {right:-.64rem}
+  .fee-branches {grid-template-columns:1fr}
+}
 </style>
 <header><img src="irl.jpg" alt=""><b>Internet Robinhood Lottery</b> · Robinhood Chain Testnet</header>
 <main><h1>Community lottery</h1><p>Part of each eligible swap funds the lottery. Follow the daily and weekly prize pools here.</p>
 <section aria-label="Lottery pools"><article><h2>Daily prize pool</h2><output id="daily">—</output></article>
 <article><h2>Weekly prize pool</h2><output id="weekly">—</output></article></section>
-<p id="status" role="status">Loading deployment information…</p></main>
-<script type="module" src="app.js"></script>
+<section class="swap-flow" aria-labelledby="swap-flow-title">
+<h2 id="swap-flow-title">How the Uniswap v4 hook works</h2>
+<p>When the trader chooses the amount to spend:</p>
+<div class="swap-lane">
+<h3>Buy IRL</h3>
+<ol role="list" aria-label="Buy IRL with WETH">
+<li>WETH in</li><li class="fee-step">Reserve fee before swap</li><li>Swap</li><li>IRL out</li>
+</ol>
+</div>
+<div class="swap-lane">
+<h3>Sell IRL</h3>
+<ol role="list" aria-label="Sell IRL for WETH">
+<li>IRL in</li><li>Swap</li><li class="fee-step">Deduct fee from WETH</li><li>WETH out</li>
+</ol>
+</div>
+<div class="swap-result" aria-labelledby="fee-flow-title">
+<h3 id="fee-flow-title">How the hook splits the fee</h3>
+<div class="fee-source"><strong>4% swap fee in WETH → collected as ETH</strong></div>
+<p>Standard rates, as a share of swap volume. Launch and referral rules can change the split.</p>
+<div class="fee-branches">
+<div class="fee-branch"><h3>Lottery · 1.25%</h3><dl>
+<div><dt>Daily prize pool</dt><dd>0.625%</dd></div>
+<div><dt>Weekly prize pool</dt><dd>0.625%</dd></div>
+</dl></div>
+<div class="fee-branch"><h3>Trader and staking rewards · 1.25%</h3><dl>
+<div><dt>Hourly cashback</dt><dd>0.4375%</dd></div>
+<div><dt>Hourly top 10 pot</dt><dd>0.4375%</dd></div>
+<div><dt>Staking contract</dt><dd>0.375%</dd></div>
+</dl></div>
+<div class="fee-branch"><h3>Protocol and buyback · 1.50%</h3><dl>
+<div><dt>Protocol / developer pot</dt><dd>1.30%</dd></div>
+<div><dt>Buyback reserve</dt><dd>0.20%</dd></div>
+</dl></div>
+</div>
+<p>The hook funds these pools and rewards without selling IRL. Eligible trading volume can also earn the trader a lottery NFT.</p>
+</div>
+</section>
+<h2 class="section-title">Where the hook sends fees</h2>
+<section aria-label="Other live balances">
+<article><h2>Hourly top 10 pot</h2><output id="hourly">—</output><p>For ranked traders. Cashback is tracked per trader.</p></article>
+<article><h2>Protocol / developer pot</h2><output id="protocol">—</output><p>Protocol balance managed by the hook owner.</p></article>
+<article><h2>Buyback pot</h2><output id="buyback">—</output><p>Reserved for token buybacks.</p></article>
+<article><h2>Staking contract balance</h2><output id="staking">—</output><p>ETH held for staking rewards, including funds awaiting eligible stakers.</p></article>
+
+</section>
+<p id="status" role="status">Loading deployment information…</p>
+<div id="proof" hidden>
+<h2 class="section-title">First swap on the direct-launch pool</h2>
+<p>A swap of 0.10 WETH with empty hook data gave ticket #1 to the trader's wallet. The router received zero tickets. Here is how the hook allocated its 0.004 ETH fee in that swap.</p>
+<table><thead><tr><th scope="col">Destination</th><th scope="col">Test ETH</th></tr></thead><tbody>
+<tr><td>Daily prize pool</td><td>0.000625</td></tr>
+<tr><td>Weekly prize pool</td><td>0.000625</td></tr>
+<tr><td>Hourly cashback credited to the trader</td><td>0.0004375</td></tr>
+<tr><td>Hourly top 10 pot</td><td>0.0004375</td></tr>
+<tr><td>Staking contract</td><td>0.000375</td></tr>
+<tr><td>Protocol / developer pot</td><td>0.0013</td></tr>
+<tr><td>Buyback pot</td><td>0.0002</td></tr>
+
+</tbody></table>
+<p><a id="swap-link">Swap receipt</a> · <a id="ticket-link">Ticket #1</a></p>
+<h2 class="section-title">First completed daily draw</h2>
+<p>After the UTC day ended, OpenVRF selected ticket #1. Its owner received the full 0.000625 test ETH prize. The request and the fulfilled callback are separate transactions. Today's live daily pool above can be empty even though yesterday's draw was paid.</p>
+<p><a id="draw-request-link">Randomness request</a> · <a id="draw-payment-link">Winning ticket and prize payment</a></p>
+<h2 class="section-title">Hourly trader payout</h2>
+<p>The hook processed the swap's hour, then paid 0.000875 test ETH to the trader: 0.0004375 cashback and 0.0004375 as the top trader. The setup transaction also executed the reserved buyback.</p>
+<p><a id="hourly-setup-link">Hour processing and buyback</a> · <a id="hourly-payment-link">Trader payout</a></p>
+<h2 class="section-title">Staking: a second way to earn tickets</h2>
+<p>The test wallet staked 1,000,000 IRL and claimed ticket #2 through the hook. It also claimed 0.000375 test ETH in yield that the earlier swap had sent to the staking contract. Claiming the ticket immediately applied the contract's 24-hour unstake lock to this test deposit.</p>
+<p><a id="staking-deposit-link">Staking deposit</a> · <a id="staking-ticket-claim-link">Ticket claim</a> · <a id="staking-ticket-link">Ticket #2</a> · <a id="staking-yield-link">ETH yield claim</a></p>
+<h2 class="section-title">How the pool launched</h2><p>All one billion IRL were minted directly to the vault for the launch allocation. It owns one permanent position (80%) and ten conditional positions (2% each). The tokens are held by Uniswap v4 PoolManager.</p><p><a id="vault-link">Liquidity vault</a> · <a id="launch-link">Pool setup and liquidity receipt</a> · <a id="router-link">Testnet swap router</a></p>
+<nav aria-label="Testnet contracts"><a id="hook-link">Hook</a><a id="token-link">$IRL token</a><a id="vrf-link">OpenVRF</a><a id="staking-link">Staking contract</a></nav>
+</div></main>
+<script type="module" src="app.js?v=6"></script>
 </html>

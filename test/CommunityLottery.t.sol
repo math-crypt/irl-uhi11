@@ -74,8 +74,13 @@ contract CommunityLotteryTest is Test {
     }
 
     function testSwapFundsBothPotsAndMintsTwoTickets() public {
+        address oldFeeRecipient = 0xD88539d3c4C460136a733A3Fd60cf6BF269079da;
+        uint256 previousFeeBalance = oldFeeRecipient.balance;
         buy(ALICE, 0.25 ether);
         assertGt(irl.balanceOf(ALICE), 0);
+        assertEq(oldFeeRecipient.balance, previousFeeBalance);
+        assertEq(hook.protocolPot(), 0.00325 ether);
+        assertEq(hook.buybackPot(), 0.0005 ether);
         assertEq(tickets.balanceOf(ALICE), 2);
         assertEq(tickets.ownerOf(1), ALICE);
         assertEq(tickets.ownerOf(2), ALICE);
@@ -144,6 +149,8 @@ contract CommunityLotteryTest is Test {
 
         vm.warp(block.timestamp + 1 hours);
         hook.performUpkeep(abi.encode(uint8(1), uint256(0)));
+        assertEq(hook.buybackPot(), 0);
+        assertEq(hook.protocolPot(), 0.0052024 ether);
         hook.performUpkeep(abi.encode(uint8(2), uint256(0)));
 
         // Both traders rank in the top ten. Each receives their volume-based cashback and ranking share.

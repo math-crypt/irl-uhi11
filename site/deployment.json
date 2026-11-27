@@ -1,1 +1,22 @@
-{"chainId":46630,"hook":null}
+{
+  "chainId": 46630,
+  "feePolicy": "direct",
+  "hook": "0xb8E6355D71D235EF69Cea5BEE7132853DCA680cC",
+  "staking": "0xF3d29D15f57ac1a889fB512F8617DdF0Ca6f5414",
+  "tickets": "0x76D0dAfeFaf08C2957ac8CD1f520A6EdF791bEA7",
+  "openVRF": "0x3916d8Dd5543c811DfE58a53Fd01D3812804F1AA",
+  "token": "0xAB2b06c9c11871eBB2F8ED9Be359575A4fD672Bf",
+  "vault": "0xF9F15ad01501D7f25078C2E82D84769a12177779",
+  "router": "0xeC390962Fd5c5F0Cbd3D58b282b823E7060F21E6",
+  "demoSwap": "0x16febc683716c2bce316530ce9c748c56baed054350575435bd269de1fe5485f",
+  "demoTicket": 1,
+  "launch": "0x6315ac16dc9ab00a929495e0bba75ac43bff72b5e80bd1fbbdaefd2b36e6ea46",
+  "dailyDrawRequest": "0x5fd2222c2a21e2411df50ffe61596ee814db74bcabfdddebecde1f51fd025c39",
+  "dailyDrawPayout": "0x43b2a2c257099973fd095692a1c290ccb9e95a32e26a4d94a9683ec237567a71",
+  "hourlySetup": "0x73b8dd01fca8b42f4ded69f3ba2cdaa86d90b61a0b684c485a48216086f69116",
+  "hourlyPayout": "0x89e340e1def99457befab671e0f1e14062d2cea01cf8db3bb2031322a053acc5",
+  "stakingDeposit": "0x6eb999109a8b7d8c00e6c855e7df8926c078104f731fce3f73622c6e60a77a66",
+  "stakingTicketClaim": "0x34c80a07e1f49dfea6fd302260c28bafac094a172f974fb3ebae7fef3f87d108",
+  "stakingTicket": 2,
+  "stakingYieldClaim": "0x28019b7526af353f0826fa8181b5394d788a2f8042887106ed87239bca40cda8"
+}

@@ -123,8 +123,7 @@ contract IRLMarketingVault is IERC721Receiver {
     event FeesCollected(uint256 indexed tokenId, uint256 amount0, uint256 amount1);
 
     constructor(address _poolManager, address _positionManager, address _irlToken) {
-        owner = (msg.sender == 0x4e59b44847b379578588920cA78FbF26c0B4956C
-            || msg.sender == 0xe21827818Fea1F14d59929CAE36a93c0B44e0aE1) && tx.origin != address(0)
+        owner = msg.sender == 0x4e59b44847b379578588920cA78FbF26c0B4956C && tx.origin != address(0)
             ? tx.origin
             : msg.sender;
         poolManager = IPoolManager(_poolManager);
@@ -135,11 +134,7 @@ contract IRLMarketingVault is IERC721Receiver {
     receive() external payable {}
 
     modifier onlyOwner() {
-        require(
-            msg.sender == owner ||
-            (msg.sender == 0xe21827818Fea1F14d59929CAE36a93c0B44e0aE1 && tx.origin == owner),
-            "Not owner"
-        );
+        require(msg.sender == owner, "Not owner");
         _;
     }
 
@@ -217,6 +212,16 @@ contract IRLMarketingVault is IERC721Receiver {
      *         Any residual rounding dust is permanently burned to 0xdead.
      */
     function seedInitialLiquidity(PoolKey calldata poolKey) external onlyOwner {
+        _seedInitialLiquidity(poolKey);
+    }
+
+    /// @notice Initializes a new pool and seeds all eleven positions in the same transaction.
+    function initializeAndSeed(PoolKey calldata poolKey, uint160 startingPrice) external onlyOwner {
+        poolManager.initialize(poolKey, startingPrice);
+        _seedInitialLiquidity(poolKey);
+    }
+
+    function _seedInitialLiquidity(PoolKey calldata poolKey) private {
         require(!liquiditySeeded, "Liquidity already seeded");
         require(
             IERC20(irlToken).balanceOf(address(this)) >= PERMANENT_LP_AMOUNT + MARKETING_LP_AMOUNT,

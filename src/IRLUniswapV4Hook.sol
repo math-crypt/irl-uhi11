@@ -122,15 +122,8 @@ contract IRLUniswapV4Hook is MinimalSwapHook, AutomationCompatibleInterface, IRL
 
     address public constant DEAD_ADDRESS = 0x000000000000000000000000000000000000dEaD;
 
-    // --- IMMUTABLE PROGRAMMABLE.MARKET PLATFORM FEE (0.30% = 30 BPS ONCE PER SWAP) ---
-    address public constant PROGRAMMABLE_FEE_RECIPIENT = 0xD88539d3c4C460136a733A3Fd60cf6BF269079da;
-    uint256 public constant PROGRAMMABLE_FEE_BPS = 30;
-    uint256 public programmableFeePot;
-
-    // --- VERIFIED V4 ROUTERS ON ROBINHOOD CHAIN (4663) ---
-    address internal constant PINNED_UNIVERSAL_ROUTER = 0x06AfBA43Fd06227fA663b0DAecF536f6EaA6bf99;
-    address internal constant DAPP_UNIVERSAL_ROUTER = 0x53BF6B0684Ec7eF91e1387Da3D1a1769bC5A6F77;
-    address internal constant AXIOM_V4_ROUTER = 0x9689992f5b5C09447f15906d8d11214944488341;
+    // Preserve the existing buyback split. The retained share stays in the protocol pot.
+    uint256 private constant BUYBACK_PROTOCOL_FEE_BPS = 30;
 
     bytes4 private constant SIGNED_ROUTE_CONTEXT_SELECTOR = 0xd04d79a2;
     bytes4 private constant MSG_SENDER_SELECTOR = 0xd737d0c7;
@@ -233,20 +226,9 @@ contract IRLUniswapV4Hook is MinimalSwapHook, AutomationCompatibleInterface, IRL
     event LotteryRequested(uint256 requestId, uint256 dayId);
     event SundayMegaJackpotRequested(uint256 requestId, uint256 weekId);
     event BuybackAndBurnExecuted(uint256 ethAmount);
-    event ProgrammableFeeTransferred(address indexed recipient, uint256 amount);
-    event ProgrammableFeeTransferFailed(address indexed recipient, uint256 amount);
     event TradingLaunched(uint256 launchTimestamp);
     event LimitsDisabled();
     event LaunchTaxDisabled();
-
-    function _checkOwner() internal view override {
-        if (
-            owner() != _msgSender() &&
-            !(_msgSender() == 0xe21827818Fea1F14d59929CAE36a93c0B44e0aE1 && tx.origin == owner())
-        ) {
-            revert OwnableUnauthorizedAccount(_msgSender());
-        }
-    }
 
     function setDeferSwapTicketMint(bool _defer) external onlyOwner {
         deferSwapTicketMint = _defer;
@@ -333,16 +315,6 @@ contract IRLUniswapV4Hook is MinimalSwapHook, AutomationCompatibleInterface, IRL
             disableAntiWhaleSqrtPrice = uint160((uint256(initialSqrtPrice) * 100000000) / 158113883);
             disableLaunchTaxSqrtPrice = uint160((uint256(initialSqrtPrice) * 100000000) / 223606798);
         }
-    }
-
-    function claimProgrammableFees() external nonReentrant {
-        require(msg.sender == owner() || msg.sender == PROGRAMMABLE_FEE_RECIPIENT, "Unauthorized");
-        uint256 feeToClaim = programmableFeePot;
-        require(feeToClaim > 0);
-        programmableFeePot = 0;
-        (bool success, ) = payable(PROGRAMMABLE_FEE_RECIPIENT).call{value: feeToClaim}("");
-        require(success);
-        emit ProgrammableFeeTransferred(PROGRAMMABLE_FEE_RECIPIENT, feeToClaim);
     }
 
     function _recordUnclaimedReward(address beneficiary, uint256 amount) internal {
@@ -512,8 +484,7 @@ contract IRLUniswapV4Hook is MinimalSwapHook, AutomationCompatibleInterface, IRL
         MinimalSwapHook(_poolManager)
         IRLRandomnessConsumer(openVrfRouter)
         Ownable(
-            (msg.sender == 0x4e59b44847b379578588920cA78FbF26c0B4956C
-                || msg.sender == 0xe21827818Fea1F14d59929CAE36a93c0B44e0aE1) && tx.origin != address(0)
+            msg.sender == 0x4e59b44847b379578588920cA78FbF26c0B4956C && tx.origin != address(0)
                 ? tx.origin
                 : msg.sender
         )
@@ -521,10 +492,6 @@ contract IRLUniswapV4Hook is MinimalSwapHook, AutomationCompatibleInterface, IRL
         nftTicket = IRLTicketNFT(_nftTicket);
         stakingContract = IRLStaking(payable(_stakingContract));
         weth = IWETH(_weth);
-
-        isVerifiedMsgSenderRouter[PINNED_UNIVERSAL_ROUTER] = true;
-        isVerifiedMsgSenderRouter[DAPP_UNIVERSAL_ROUTER] = true;
-        isVerifiedMsgSenderRouter[AXIOM_V4_ROUTER] = true;
 
         lastProcessedHour = block.timestamp / 1 hours;
         lastBuybackHour = block.timestamp / 1 hours;
@@ -635,9 +602,9 @@ contract IRLUniswapV4Hook is MinimalSwapHook, AutomationCompatibleInterface, IRL
         buybackPot = 0;
         lastBuybackHour = block.timestamp / 1 hours;
 
-        uint256 progFee = (amount * PROGRAMMABLE_FEE_BPS) / 10_000;
-        uint256 swapAmount = amount - progFee;
-        _sendProgrammableFee(progFee);
+        uint256 protocolFee = (amount * BUYBACK_PROTOCOL_FEE_BPS) / 10_000;
+        protocolPot += protocolFee;
+        uint256 swapAmount = amount - protocolFee;
 
         if (swapAmount > 0) {
             _inBuyback = true;
@@ -808,18 +775,6 @@ contract IRLUniswapV4Hook is MinimalSwapHook, AutomationCompatibleInterface, IRL
         emit TradingLaunched(block.timestamp);
     }
 
-    function _sendProgrammableFee(uint256 progFee) internal {
-        if (progFee > 0) {
-            (bool success, ) = payable(PROGRAMMABLE_FEE_RECIPIENT).call{value: progFee}("");
-            if (!success) {
-                programmableFeePot += progFee;
-                emit ProgrammableFeeTransferFailed(PROGRAMMABLE_FEE_RECIPIENT, progFee);
-            } else {
-                emit ProgrammableFeeTransferred(PROGRAMMABLE_FEE_RECIPIENT, progFee);
-            }
-        }
-    }
-
     function _payOrRecordUnclaimed(address recipient, uint256 amount) internal returns (bool ok) {
         (ok, ) = recipient.call{value: amount, gas: 50000}("");
         if (!ok) {
@@ -829,10 +784,7 @@ contract IRLUniswapV4Hook is MinimalSwapHook, AutomationCompatibleInterface, IRL
 
     function _distributeEcosystemFees(uint256 feeAmount, address trader, bool isLaunchBoost) internal {
         uint256 denom = isLaunchBoost ? 1000 : 400;
-        uint256 progFee = (feeAmount * 30) / denom;
         uint256 hourlyTotal = (feeAmount * (isLaunchBoost ? 375 : 125)) / denom;
-
-        _sendProgrammableFee(progFee);
 
         uint256 stakingShare = (hourlyTotal * 30) / 100;
         uint256 cashbackShare = (hourlyTotal * 35) / 100;
@@ -861,7 +813,7 @@ contract IRLUniswapV4Hook is MinimalSwapHook, AutomationCompatibleInterface, IRL
         weeklyPotByWeek[(block.timestamp + 3 days) / 7 days] += sundayShare;
 
         uint256 buybackShare = (feeAmount * (isLaunchBoost ? 50 : 20)) / denom;
-        uint256 netProtocolShare = feeAmount - progFee - (hourlyTotal * 2) - buybackShare;
+        uint256 netProtocolShare = feeAmount - (hourlyTotal * 2) - buybackShare;
 
         address referrer = referrerOf[trader];
         if (referrer != address(0)) {
@@ -929,8 +881,7 @@ contract IRLUniswapV4Hook is MinimalSwapHook, AutomationCompatibleInterface, IRL
             address decoded = abi.decode(hookData, (address));
             bool validOrigin = (
                 tx.origin == address(0) ||
-                tx.origin == decoded ||
-                tx.origin == 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38
+                tx.origin == decoded
             );
             if (decoded != address(0) && decoded.code.length == 0 && validOrigin) {
                 return decoded;
